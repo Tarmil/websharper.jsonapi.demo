@@ -115,6 +115,7 @@
     <Compile Include="RestApi.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Main.fs" />
+    <None Include="PeopleInfo.html" />
     <Content Include="Main.html" />
     <Content Include="Web.config" />
     <Content Include="Global.asax" />

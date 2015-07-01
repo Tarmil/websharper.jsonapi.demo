@@ -1,0 +1,25 @@
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+th {
+    text-align: left;
+}
+
+td {
+    padding: 5px;
+}
+
+thead td {
+    font-weight: bold;
+    font-size: 1.2em;
+    border-bottom: 4px double black;
+}
+
+.errors {
+    color: red;
+}
