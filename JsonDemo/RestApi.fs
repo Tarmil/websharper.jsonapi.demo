@@ -12,16 +12,16 @@ module RestApi =
     /// The type of actions, ie. REST API entry points.
     type Action =
         /// GET /person?id=123
-        | [<EndPoint "GET /person?id">]
+        | [<EndPoint "GET /person">]
             GetPerson of id: int
         /// POST /person (with JSON body)
         | [<EndPoint "POST /person"; Json "personData">]
             PostPerson of personData: PersonData
         /// PUT /person?id=123 (with JSON body)
-        | [<EndPoint "PUT /person?id"; Json "personData">]
+        | [<EndPoint "PUT /person"; Json "personData">]
             PutPerson of id: int * personData: PersonData
         /// DELETE /person?id=123
-        | [<EndPoint "DELETE /person?id">]
+        | [<EndPoint "DELETE /person">]
             DeletePerson of id: int
         | [<EndPoint "GET /people">]
             GetPeople
@@ -29,11 +29,7 @@ module RestApi =
     /// Data about a person. Used both for storage and JSON parsing/writing.
     and PersonData =
         { firstName: string
-          lastName: string
-          /// DateTimeFormat indicates how JSON parses and writes this date.
-          [<DateTimeFormat "yyyy-MM-dd">] born: System.DateTime
-          /// Since this is an option, this field is only present in JSON for Some value.
-          [<DateTimeFormat "yyyy-MM-dd">] died: option<System.DateTime> }
+          lastName: string }
 
     /// Type used for all JSON responses to indicate success or failure.
     [<NamedUnionCases "result">]
@@ -45,6 +41,8 @@ module RestApi =
 
     /// Result value for PostPerson.
     type Id = { id : int }
+
+    type Error = { error: string }
 
     module private ApplicationLogic =
         open System.Threading
@@ -102,37 +100,37 @@ module RestApi =
                 |> Seq.toArray
                 |> Success
 
+    let MakeContent (result: Result<'T>) =
+        match result with
+        | Success x ->
+            Content.JsonContent <| fun ctx -> x
+        | Failure msg ->
+            Content.JsonContent <| fun ctx -> { error = msg }
+            |> Content.SetStatus (Http.Status.Custom 400 (Some "Bad Request"))
+
     let ApiContent (action: Action) : Content<Action> =
         match action with
         | GetPerson id ->
-            Content.JsonContent <| fun ctx -> ApplicationLogic.getPerson id
+            MakeContent (ApplicationLogic.getPerson id)
         | PostPerson personData ->
-            Content.JsonContent <| fun ctx -> ApplicationLogic.postPerson personData
+            MakeContent (ApplicationLogic.postPerson personData)
         | PutPerson (id, personData) ->
-            Content.JsonContent <| fun ctx -> ApplicationLogic.putPerson id personData
+            MakeContent (ApplicationLogic.putPerson id personData)
         | DeletePerson id ->
-            Content.JsonContent <| fun ctx -> ApplicationLogic.deletePerson id
+            MakeContent (ApplicationLogic.deletePerson id)
         | GetPeople ->
-            Content.JsonContent <| fun ctx -> ApplicationLogic.getPeople ()
+            MakeContent (ApplicationLogic.getPeople ())
 
     let Sitelet = Sitelet.Infer ApiContent
 
     // Pre-fill the database with a few people.
     do Seq.iter (ApplicationLogic.postPerson >> ignore) [
         { firstName = "Alonzo"
-          lastName = "Church"
-          born = DateTime(1903, 6, 14)
-          died = Some(DateTime(1995, 8, 11)) }
+          lastName = "Church" }
         { firstName = "Alan"
-          lastName = "Turing"
-          born = DateTime(1912, 6, 23)
-          died = Some(DateTime(1954, 6, 7)) }
+          lastName = "Turing" }
         { firstName = "Bertrand"
-          lastName = "Russell"
-          born = DateTime(1872, 5, 18)
-          died = Some(DateTime(1970, 2, 2)) }
+          lastName = "Russell" }
         { firstName = "Noam"
-          lastName = "Chomsky"
-          born = DateTime(1928, 12, 7)
-          died = None }
+          lastName = "Chomsky" }
     ]

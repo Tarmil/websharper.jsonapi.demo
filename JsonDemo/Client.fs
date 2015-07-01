@@ -74,38 +74,38 @@ module Client =
                     ContentType = "application/json",
                     DataType = DataType.Text,
                     Success = (fun (respData, _, _) ->
-                        ok <| data.OnSuccess (respData :?> string)),
-                    Error = (fun (_, _, error) ->
-                        ko <| System.Exception(error))
+                        ok <| Success (data.OnSuccess (respData :?> string))),
+                    Error = (fun (xhr, _, _) ->
+                        ok <| Failure (Json.Deserialize<Error>(xhr.ResponseText).error))
                 )
             data.Data |> Option.iter (fun d -> settings.Data <- d)
             JQuery.Ajax(settings) |> ignore
 
     let private fetchPeople () =
         mkApiData RequestType.GET "/api/people" [] None 
-        <| Json.Deserialize<Result<(Id * PersonData) []>>
+        <| Json.Deserialize<(Id * PersonData) []>
         |> apiCall
 
     let private getPerson (id : int) =
-        mkApiData RequestType.GET "/api/person" ["id", string id] None 
-        <| Json.Deserialize<Result<PersonData>>
+        mkApiData RequestType.GET ("/api/person/" + string id) [] None 
+        <| Json.Deserialize<PersonData>
         |> apiCall
 
     let private postPerson (data : PersonData) =
         mkApiData RequestType.POST "/api/person" []
-        <| Some (Json.Serialize data )
-        <| Json.Deserialize<Result<Id>>
+        <| Some (Json.Serialize data)
+        <| Json.Deserialize<Id>
         |> apiCall
 
     let private putPerson (id : int) (data : PersonData) =
-        mkApiData RequestType.PUT "/api/person" ["id", string id]
+        mkApiData RequestType.PUT ("/api/person/" + string id) []
         <| Some (Json.Serialize data)
-        <| Json.Deserialize<Result<unit>>
+        <| Json.Deserialize<unit>
         |> apiCall
 
     let private deletePerson (id : int) =
-        mkApiData RequestType.DELETE "/api/person" ["id", string id] None
-        <| Json.Deserialize<Result<unit>>
+        mkApiData RequestType.DELETE ("/api/person/" + string id) [] None
+        <| Json.Deserialize<unit>
         |> apiCall
 
     type PeopleInfo = Template<"PeopleInfo.html">
@@ -134,16 +134,6 @@ module Client =
 
         let firstName = Var.Create ""
         let lastName = Var.Create ""
-        let born = Var.Create ""
-        let bornV = 
-            born.View
-            |> View.Map (validDate "Bad date format: date of birth.")
-        let died = Var.Create ""
-        let diedV =
-            died.View
-            |> View.Map (fun d ->
-                if d.Trim() = "" then Success None
-                else validDate "Bad date format: date of death." d |> Result.map Some)
 
         let resultErr : Var<string option> = Var.Create None
         let submitPressed = Var.Create false
@@ -152,69 +142,46 @@ module Client =
             [
                 firstName.View |> validate (not << isEmpty) "First name cannot be empty."
                 lastName.View |> validate (not << isEmpty) "Last name cannot be empty."
-                born.View |> validate (not << isEmpty) "Date of birth cannot be empty."
             ]
             |> Seq.map toError
-            |> fun e ->
-                Seq.append e
-                    [ bornV |> toError
-                      diedV |> toError ]
             |> View.Sequence
             |> View.Map (Seq.choose id)
 
         let valid = errors |> View.Map Seq.isEmpty
 
-        let submitButton valid born died =
-            match born, died with
-            | Success b, Success d ->
-                Doc.Button "Add" [] <| fun () ->
-                    submitPressed := true
-                    if valid then
-                        let data =
-                            { firstName = firstName.Value
-                              lastName = lastName.Value
-                              born = b
-                              died = d }
-                        async {
-                            let! res = postPerson data
-                            match res with
-                            | Success id ->
-                                people.Add (id, data)
-                            | Failure f ->
-                                Console.Log f
-                            submitPressed := false
-                        }
-                        |> Async.Start
-
-            | _ -> Doc.Button "Add" [] <| fun () -> submitPressed := true
+        let submitButton valid =
+            Doc.Button "Add" [] <| fun () ->
+                submitPressed := true
+                if valid then
+                    let data =
+                        { firstName = firstName.Value
+                          lastName = lastName.Value }
+                    async {
+                        let! res = postPerson data
+                        match res with
+                        | Success id ->
+                            people.Add (id, data)
+                        | Failure f ->
+                            Console.Log f
+                        submitPressed := false
+                    }
+                    |> Async.Start
 
         PeopleInfo.Doc(
             FirstName = firstName,
             LastName = lastName,
-            Born = born,
-            Died = died,
             SubmitButton =
                 (valid
-                |> View.Bind (fun vld ->
-                    View.Map2 (fun born died -> 
-                        submitButton vld born died
-                    ) bornV diedV
-                )
+                |> View.Map submitButton
                 |> Doc.EmbedView),
             People =
                 (people
                 |> ListModel.View
                 |> Doc.Convert (fun (id, pd) ->
                     let vc : string -> View<string> = View.Const
-                    let died = defaultArg (pd.died |> Option.map (fun e -> e.JS.ToLocaleString())) ""
-                    Console.Log died
-                    if pd.died.IsSome then Console.Log pd.died.Value
-
                     PeopleInfo.Info.Doc(
                         FirstName = vc pd.firstName,
                         LastName = vc pd.lastName,
-                        Born = vc (pd.born.JS.ToLocaleString()),
-                        Died = vc died,
                         OnDeleteClick = fun ev ->
                             async {
                                 let! res = deletePerson id.id
