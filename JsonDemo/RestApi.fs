@@ -12,16 +12,16 @@ module RestApi =
     /// The type of actions, ie. REST API entry points.
     type Action =
         /// GET /person?id=123
-        | [<EndPoint "GET /person?id">]
+        | [<EndPoint "GET /person">]
             GetPerson of id: int
         /// POST /person (with JSON body)
         | [<EndPoint "POST /person"; Json "personData">]
             PostPerson of personData: PersonData
         /// PUT /person?id=123 (with JSON body)
-        | [<EndPoint "PUT /person?id"; Json "personData">]
+        |  [<EndPoint "PUT /person"; Json "personData">]
             PutPerson of id: int * personData: PersonData
         /// DELETE /person?id=123
-        | [<EndPoint "DELETE /person?id">]
+        | [<EndPoint "DELETE /person">]
             DeletePerson of id: int
         | [<EndPoint "GET /people">]
             GetPeople

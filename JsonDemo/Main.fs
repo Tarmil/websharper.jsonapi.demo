@@ -40,7 +40,7 @@ module Site =
     let Main =
         Sitelet.Sum [
             Sitelet.Content "/" Home HomePage
-            Sitelet.EmbedInUnion <@ Api @> RestApi.Sitelet
+            Sitelet.Shift "api" (Sitelet.EmbedInUnion <@ Api @> RestApi.Sitelet)
         ]
 
 [<Sealed>]

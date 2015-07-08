@@ -45,32 +45,24 @@ module Client =
         {
             Type : RequestType
             Url  : string
-            UrlParams : (string * string) seq
             Data : string option
             OnSuccess : string -> 'T
         }
 
-    let private mkApiData t u up d ons =
+    let private mkApiData t u d ons =
         { 
             Type = t
             Url = u
-            UrlParams = up
             Data = d
             OnSuccess = ons
         }
 
     let private apiCall data =
         Async.FromContinuations <| fun (ok, ko, _) ->
-            let url = 
-                let parts = 
-                    data.UrlParams 
-                    |> Seq.map (fun (a, b) -> a + "=" + b)
-                    |> String.concat "&"
-                data.Url + "?" + parts
             let settings =
                 AjaxSettings(
                     Type = data.Type,
-                    Url = url,
+                    Url = data.Url,
                     ContentType = "application/json",
                     DataType = DataType.Text,
                     Success = (fun (respData, _, _) ->
@@ -82,29 +74,29 @@ module Client =
             JQuery.Ajax(settings) |> ignore
 
     let private fetchPeople () =
-        mkApiData RequestType.GET "/api/people" [] None 
+        mkApiData RequestType.GET "/api/people" None 
         <| Json.Deserialize<Result<(Id * PersonData) []>>
         |> apiCall
 
     let private getPerson (id : int) =
-        mkApiData RequestType.GET "/api/person" ["id", string id] None 
+        mkApiData RequestType.GET ("/api/person/" + string id) None 
         <| Json.Deserialize<Result<PersonData>>
         |> apiCall
 
     let private postPerson (data : PersonData) =
-        mkApiData RequestType.POST "/api/person" []
+        mkApiData RequestType.POST "/api/person"
         <| Some (Json.Serialize data )
         <| Json.Deserialize<Result<Id>>
         |> apiCall
 
     let private putPerson (id : int) (data : PersonData) =
-        mkApiData RequestType.PUT "/api/person" ["id", string id]
+        mkApiData RequestType.PUT ("/api/person" + string id)
         <| Some (Json.Serialize data)
         <| Json.Deserialize<Result<unit>>
         |> apiCall
 
     let private deletePerson (id : int) =
-        mkApiData RequestType.DELETE "/api/person" ["id", string id] None
+        mkApiData RequestType.DELETE ("/api/person" + string id) None
         <| Json.Deserialize<Result<unit>>
         |> apiCall
 
