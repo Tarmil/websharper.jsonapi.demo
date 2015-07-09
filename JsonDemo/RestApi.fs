@@ -31,17 +31,17 @@ module RestApi =
         { firstName: string
           lastName: string
           /// DateTimeFormat indicates how JSON parses and writes this date.
-          [<DateTimeFormat "yyyy-MM-dd">] born: System.DateTime
+          born: System.DateTime
           /// Since this is an option, this field is only present in JSON for Some value.
-          [<DateTimeFormat "yyyy-MM-dd">] died: option<System.DateTime> }
+          died: option<System.DateTime> }
 
     /// Type used for all JSON responses to indicate success or failure.
     [<NamedUnionCases "result">]
     type Result<'T> =
         /// JSON: {"result": "success", /* fields of 'T... */}
-        | [<Name "success">] Success of 'T
+        | [<CompiledName "success">] Success of 'T
         /// JSON: {"result": "failure", "message": "error message..."}
-        | [<Name "failure">] Failure of message: string
+        | [<CompiledName "failure">] Failure of message: string
 
     /// Result value for PostPerson.
     type Id = { id : int }
@@ -95,12 +95,13 @@ module RestApi =
                     Success ()
                 | false, _ -> Failure "Person not found."
 
-        let getPeople () : Result<(Id * PersonData) []> =
+        //let getPeople () : Result<(Id * PersonData) []> =
+        let getPeople () : (Id * PersonData) [] =
             withReadLock <| fun () ->
                 people
                 |> Seq.map (fun e -> ({ id = e.Key }, e.Value))
                 |> Seq.toArray
-                |> Success
+                //|> Success
 
     let ApiContent (action: Action) : Content<Action> =
         match action with
