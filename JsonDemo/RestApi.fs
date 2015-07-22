@@ -11,18 +11,19 @@ module RestApi =
 
     /// The type of actions, ie. REST API entry points.
     type Action =
-        /// GET /person?id=123
+        /// GET /person/123
         | [<EndPoint "GET /person">]
             GetPerson of id: int
         /// POST /person (with JSON body)
         | [<EndPoint "POST /person"; Json "personData">]
             PostPerson of personData: PersonData
-        /// PUT /person?id=123 (with JSON body)
+        /// PUT /person/123 (with JSON body)
         |  [<EndPoint "PUT /person"; Json "personData">]
             PutPerson of id: int * personData: PersonData
-        /// DELETE /person?id=123
+        /// DELETE /person/123
         | [<EndPoint "DELETE /person">]
             DeletePerson of id: int
+        /// GET /people
         | [<EndPoint "GET /people">]
             GetPeople
 
@@ -95,13 +96,12 @@ module RestApi =
                     Success ()
                 | false, _ -> Failure "Person not found."
 
-        //let getPeople () : Result<(Id * PersonData) []> =
-        let getPeople () : (Id * PersonData) [] =
+        let getPeople () : Result<(Id * PersonData) []> =
             withReadLock <| fun () ->
                 people
                 |> Seq.map (fun e -> ({ id = e.Key }, e.Value))
                 |> Seq.toArray
-                //|> Success
+                |> Success
 
     let ApiContent (action: Action) : Content<Action> =
         match action with
@@ -137,3 +137,4 @@ module RestApi =
           born = DateTime(1928, 12, 7)
           died = None }
     ]
+ 

@@ -17,11 +17,11 @@ module Resources =
 module Client =
     open RestApi
 
-    type Result<'T> =
+    type Res<'T> =
         | Success of 'T
         | Failure of message: string
 
-    module Result =
+    module Res =
         let map f res =
             match res with
             | Success r -> Success <| f r
@@ -73,8 +73,8 @@ module Client =
             data.Data |> Option.iter (fun d -> settings.Data <- d)
             JQuery.Ajax(settings) |> ignore
 
-    let private fetchPeople () =
-        mkApiData RequestType.GET "/api/people" None 
+    let private getPeople () =
+        mkApiData RequestType.GET "/api/people/" None 
         <| Json.Deserialize<Result<(Id * PersonData) []>>
         |> apiCall
 
@@ -84,19 +84,19 @@ module Client =
         |> apiCall
 
     let private postPerson (data : PersonData) =
-        mkApiData RequestType.POST "/api/person"
-        <| Some (Json.Serialize data )
+        mkApiData RequestType.POST "/api/person/"
+        <| Some (Json.Serialize data)
         <| Json.Deserialize<Result<Id>>
         |> apiCall
 
     let private putPerson (id : int) (data : PersonData) =
-        mkApiData RequestType.PUT ("/api/person" + string id)
+        mkApiData RequestType.PUT ("/api/person/" + string id)
         <| Some (Json.Serialize data)
         <| Json.Deserialize<Result<unit>>
         |> apiCall
 
     let private deletePerson (id : int) =
-        mkApiData RequestType.DELETE ("/api/person" + string id) None
+        mkApiData RequestType.DELETE ("/api/person/" + string id) None
         <| Json.Deserialize<Result<unit>>
         |> apiCall
 
@@ -108,12 +108,12 @@ module Client =
             ListModel.Create (fun (id, _) -> id.id) []
 
         async {
-            let! res = fetchPeople ()
+            let! res = getPeople ()
             match res with
-            | Success ppl ->
+            | RestApi.Success ppl ->
                 for p in ppl do
                     people.Add p
-            | Failure f -> 
+            | RestApi.Failure f -> 
                 Console.Log f
         }
         |> Async.Start
@@ -135,7 +135,7 @@ module Client =
             died.View
             |> View.Map (fun d ->
                 if d.Trim() = "" then Success None
-                else validDate "Bad date format: date of death." d |> Result.map Some)
+                else validDate "Bad date format: date of death." d |> Res.map Some)
 
         let resultErr : Var<string option> = Var.Create None
         let submitPressed = Var.Create false
@@ -170,9 +170,9 @@ module Client =
                         async {
                             let! res = postPerson data
                             match res with
-                            | Success id ->
+                            | RestApi.Success id ->
                                 people.Add (id, data)
-                            | Failure f ->
+                            | RestApi.Failure f ->
                                 Console.Log f
                             submitPressed := false
                         }
@@ -211,9 +211,9 @@ module Client =
                             async {
                                 let! res = deletePerson id.id
                                 match res with
-                                | Success () ->
+                                | RestApi.Success () ->
                                     people.RemoveByKey id.id
-                                | Failure f ->
+                                | RestApi.Failure f ->
                                     Console.Log f
                             }
                             |> Async.Start
