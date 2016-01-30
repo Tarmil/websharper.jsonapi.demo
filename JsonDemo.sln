@@ -1,9 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "JsonDemo", "JsonDemo\JsonDemo.fsproj", "{DAAC2314-D21D-47C5-97D2-AAF65BF4DBE5}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ClientOnlyDemo", "ClientOnly\ClientOnlyDemo.fsproj", "{BD08DB28-FC37-41C9-B7B3-53C6B8FB378E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommonResources", "CommonResources", "{D2402DC4-E3B3-4BF8-B83E-35EDF82C4F7C}"
+	ProjectSection(SolutionItems) = preProject
+		CommonResources\PeopleInfo.html = CommonResources\PeopleInfo.html
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +22,10 @@ Global
 		{DAAC2314-D21D-47C5-97D2-AAF65BF4DBE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DAAC2314-D21D-47C5-97D2-AAF65BF4DBE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DAAC2314-D21D-47C5-97D2-AAF65BF4DBE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD08DB28-FC37-41C9-B7B3-53C6B8FB378E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD08DB28-FC37-41C9-B7B3-53C6B8FB378E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD08DB28-FC37-41C9-B7B3-53C6B8FB378E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD08DB28-FC37-41C9-B7B3-53C6B8FB378E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

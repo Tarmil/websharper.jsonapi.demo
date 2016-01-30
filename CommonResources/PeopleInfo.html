@@ -1,0 +1,28 @@
+<table>
+    <thead>
+        <tr>
+            <td>First name</td>
+            <td>Last name</td>
+            <td></td>
+        </tr>
+    </thead>
+    <tbody data-hole="People">
+        <tr data-template="Info">
+            <td>${FirstName}</td>
+            <td>${LastName}</td>
+            <td><button data-event-click="OnDeleteClick">Delete</button></td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td><input type="text" data-var="FirstName" /></td>
+            <td><input type="text" data-var="LastName" /></td>
+            <td data-hole="SubmitButton"></td>
+        </tr>
+    </tfoot>
+</table>
+<div class="errors" data-hole="Errors">
+    <div data-template="Error">
+        <p>${Message}</p>
+    </div>
+</div>

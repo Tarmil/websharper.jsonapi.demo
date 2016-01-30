@@ -1,9 +1,7 @@
-namespace JsonDemo
+namespace ClientOnly
 
-open System
 open WebSharper
 open WebSharper.JavaScript
-open WebSharper.JQuery
 open WebSharper.UI.Next
 open WebSharper.UI.Next.Client
 open WebSharper.UI.Next.Html
@@ -19,7 +17,6 @@ module Resources =
 
 [<JavaScript>]
 module Client =
-    open RestApi
 
     type Result<'T> =
         | Success of 'T
@@ -39,109 +36,39 @@ module Client =
     let private validate pred msg v = 
         v |> View.Map (fun e -> if pred e then Success e else Failure msg)
 
-    type private ApiData<'T> =
-        {
-            Type : RequestType
-            Url  : string
-            UrlParams : (string * string) seq
-            Data : string option
-            OnSuccess : string -> 'T
-        }
+    type Id = Key
 
-    let private mkApiData t u up d ons =
-        { 
-            Type = t
-            Url = u
-            UrlParams = up
-            Data = d
-            OnSuccess = ons
-        }
-
-    let private apiCall data =
-        Async.FromContinuations <| fun (ok, ko, _) ->
-            let url = 
-                let parts = 
-                    data.UrlParams 
-                    |> Seq.map (fun (a, b) -> a + "=" + b)
-                    |> String.concat "&"
-                data.Url + "?" + parts
-            let settings =
-                AjaxSettings(
-                    Type = data.Type,
-                    Url = url,
-                    ContentType = "application/json",
-                    DataType = DataType.Text,
-                    Success = (fun (respData, _, _) ->
-                        ok <| Success (data.OnSuccess (respData :?> string))),
-                    Error = (fun (xhr, _, _) ->
-                        ok <| Failure (Json.Deserialize<Error>(xhr.ResponseText).error))
-                )
-            data.Data |> Option.iter (fun d -> settings.Data <- d)
-            JQuery.Ajax(settings) |> ignore
-
-    let private FetchPeople () =
-        mkApiData RequestType.GET "/api/people" [] None 
-        <| Json.Deserialize<(Id * PersonData) []>
-        |> apiCall
-
-    let private GetPerson (id : Id) =
-        mkApiData RequestType.GET ("/api/person/" + string id.id) [] None 
-        <| Json.Deserialize<PersonData>
-        |> apiCall
-
-    let private PostPerson (data : PersonData) =
-        mkApiData RequestType.POST "/api/person" []
-        <| Some (Json.Serialize data)
-        <| Json.Deserialize<Id>
-        |> apiCall
-
-    let private PutPerson (id : Id) (data : PersonData) =
-        mkApiData RequestType.PUT ("/api/person/" + string id.id) []
-        <| Some (Json.Serialize data)
-        <| Json.Deserialize<unit>
-        |> apiCall
-
-    let private DeletePerson (id : Id) =
-        mkApiData RequestType.DELETE ("/api/person/" + string id.id) [] None
-        <| Json.Deserialize<unit>
-        |> apiCall
+    /// Data about a person.
+    type PersonData =
+        { firstName: string
+          lastName: string }
 
     type PeopleInfo = Template<"../CommonResources/PeopleInfo.html">
 
     [<Require(typeof<Resources.CssResource>)>]
-    let Main () =
+    let Main() =
         let people : ListModel<Id, Id * PersonData> = 
-            ListModel.Create (fun (id, _) -> id) []
-
-        async {
-            let! res = FetchPeople ()
-            match res with
-            | Success ppl ->
-                for p in ppl do
-                    people.Add p
-            | Failure f -> 
-                Console.Log f
-        }
-        |> Async.Start
+            ListModel.Create (fun (id, _) -> id)
+                <| List.map (fun x -> Key.Fresh(), x) [
+                    { firstName = "Alonzo"
+                      lastName = "Church" }
+                    { firstName = "Alan"
+                      lastName = "Turing" }
+                    { firstName = "Bertrand"
+                      lastName = "Russell" }
+                    { firstName = "Noam"
+                      lastName = "Chomsky" }
+                ]
 
         let postPerson data =
             async {
-                let! res = PostPerson data
-                match res with
-                | Success id ->
-                    people.Add (id, data)
-                | Failure f ->
-                    Console.Log f
+                let id = Key.Fresh()
+                return people.Add(id, data)
             }
 
         let deletePerson id =
             async {
-                let! res = DeletePerson id
-                match res with
-                | Success () ->
-                    people.RemoveByKey id
-                | Failure f ->
-                    Console.Log f
+                return people.RemoveByKey(id)
             }
 
         let isEmpty (s : string) = s.Trim () = ""
@@ -214,3 +141,7 @@ module Client =
                 |> Doc.EmbedView
             ]
         )
+
+    /// Single-Page Applications need to have their entry point
+    /// called by a top-level value.
+    let RunMain = Main() |> Doc.RunById "main"

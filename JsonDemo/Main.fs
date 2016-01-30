@@ -10,28 +10,15 @@ type Action =
     | Home
     | Api of RestApi.Action
 
-module Skin =
-    open System.Web
-
-    type MainTemplate = Templating.Template<"Main.html">
-
-    let WithTemplate title body : Async<Content<Action>> =
-        Content.Page(
-            Body = [
-                MainTemplate.Doc(
-                    title = title,
-                    body = body
-                )
-            ]
-        )
-
 module Site =
 
     let HomePage (ctx: Context<Action>) =
-        Skin.WithTemplate "HomePage"
-            [
+        Content.Page(
+            Title = "HomePage",
+            Body = [
                 client <@ Client.Main() @>
             ]
+        )
 
     let Main =
         Sitelet.Sum [
