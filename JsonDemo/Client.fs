@@ -5,6 +5,7 @@ open WebSharper
 open WebSharper.JavaScript
 open WebSharper.JQuery
 open WebSharper.UI.Next
+open WebSharper.UI.Next.Client
 open WebSharper.UI.Next.Html
 open WebSharper.UI.Next.Notation
 open WebSharper.UI.Next.Templating
@@ -170,19 +171,15 @@ module Client =
         PeopleInfo.Doc(
             FirstName = firstName,
             LastName = lastName,
-            SubmitButton =
-                (valid
-                |> View.Map submitButton
-                |> Doc.EmbedView),
-            People =
-                (people
+            SubmitButton = [valid |> Doc.BindView submitButton],
+            People = [
+                people
                 |> ListModel.View
-                |> Doc.Convert (fun (id, pd) ->
-                    let vc : string -> View<string> = View.Const
+                |> Doc.BindSeqCached (fun (id, pd) ->
                     PeopleInfo.Info.Doc(
-                        FirstName = vc pd.firstName,
-                        LastName = vc pd.lastName,
-                        OnDeleteClick = fun ev ->
+                        FirstName = pd.firstName,
+                        LastName = pd.lastName,
+                        OnDeleteClick = (fun el ev ->
                             async {
                                 let! res = deletePerson id.id
                                 match res with
@@ -192,21 +189,23 @@ module Client =
                                     Console.Log f
                             }
                             |> Async.Start
+                        )
                     )
-                )),
-            Errors = 
-                (errors
-                |> View.Map2 (fun (se : string option) errs ->
+                )
+            ],
+            Errors = [
+                View.Map2 (fun (se : string option) errs ->
                     submitPressed.View 
                     |> View.Map (fun sp ->
                         if sp then // show errors only if submit was pressed
                             // append error from result (if any) to the list of errors
                             seq { yield! errs; if se.IsSome then yield se.Value }
-                            |> Seq.map (fun e -> PeopleInfo.Error.Doc(Message = View.Const e))
+                            |> Seq.map (fun e -> PeopleInfo.Error.Doc(Message = e))
                             |> Doc.Concat
                         else Doc.Empty
                     )
-                ) resultErr.View
+                ) resultErr.View errors
                 |> View.Join
-                |> Doc.EmbedView)
+                |> Doc.EmbedView
+            ]
         )

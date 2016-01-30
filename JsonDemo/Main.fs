@@ -1,8 +1,10 @@
 namespace JsonDemo
 
-open WebSharper.Html.Server
 open WebSharper
 open WebSharper.Sitelets
+open WebSharper.UI.Next
+open WebSharper.UI.Next.Html
+open WebSharper.UI.Next.Server
 
 type Action =
     | Home
@@ -11,30 +13,24 @@ type Action =
 module Skin =
     open System.Web
 
-    type Page =
-        {
-            Title : string
-            Body : list<Element>
-        }
+    type MainTemplate = Templating.Template<"Main.html">
 
-    let MainTemplate =
-        Content.Template<Page>("~/Main.html")
-            .With("title", fun x -> x.Title)
-            .With("body", fun x -> x.Body)
-
-    let WithTemplate title body : Content<Action> =
-        Content.WithTemplate MainTemplate <| fun context ->
-            {
-                Title = title
-                Body = body context
-            }
+    let WithTemplate title body : Async<Content<Action>> =
+        Content.Page(
+            Body = [
+                MainTemplate.Doc(
+                    title = title,
+                    body = body
+                )
+            ]
+        )
 
 module Site =
 
-    let HomePage =
-        Skin.WithTemplate "HomePage" <| fun ctx ->
+    let HomePage (ctx: Context<Action>) =
+        Skin.WithTemplate "HomePage"
             [
-                Div [ClientSide <@ Client.Main() @>]
+                client <@ Client.Main() @>
             ]
 
     let Main =

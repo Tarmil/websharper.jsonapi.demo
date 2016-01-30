@@ -103,12 +103,12 @@ module RestApi =
     let MakeContent (result: Result<'T>) =
         match result with
         | Success x ->
-            Content.JsonContent <| fun ctx -> x
+            Content.Json x
         | Failure msg ->
-            Content.JsonContent <| fun ctx -> { error = msg }
+            Content.Json { error = msg }
             |> Content.SetStatus (Http.Status.Custom 400 (Some "Bad Request"))
 
-    let ApiContent (action: Action) : Content<Action> =
+    let ApiContent (ctx: Context<Action>) (action: Action) : Async<Content<Action>> =
         match action with
         | GetPerson id ->
             MakeContent (ApplicationLogic.getPerson id)
